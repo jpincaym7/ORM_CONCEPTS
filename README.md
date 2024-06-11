@@ -1,13 +1,20 @@
 # ORM_CONCEPTS_DJANGO
 # ORM: Mapeo Objeto-Relacional (Sentencias | CRUD |)
 
-Este repositorio contiene un conjunto de scripts y funciones para trabajar con un sistema de gestión educativa utilizando Django y un ORM (Mapeo Objeto-Relacional) para la manipulación de datos en la base de datos.
+Este repositorio contiene un conjunto de scripts y funciones para trabajar con un sistema de gestión 
+educativa utilizando Django y un ORM (Mapeo Objeto-Relacional) para la manipulación de datos en la base de datos.
+
+Se incluyen los siguientes conceptos y operaciones:
+![Diagrama del Sistema](\img\diagram.PNG)
 
 ## Contenido
 
-- `core.models`: Contiene los modelos de datos para el sistema educativo, incluyendo Periodo, Nota, DetalleNota, Estudiante, Profesor, Asignatura, y funciones auxiliares de gestión.
-- `create.py`: Scripts para crear y poblar la base de datos con datos iniciales.
-- `consults.py`: Funciones para realizar consultas generales en la base de datos.
+- **Modelos de Datos:**
+  - `core.models`: Contiene los modelos de datos para el sistema educativo, incluyendo `Periodo`, `Nota`, `DetalleNota`, `Estudiante`, `Profesor`, `Asignatura`, y funciones auxiliares de gestión.
+- **Scripts de Creación:**
+  - `create.py`: Scripts para crear y poblar la base de datos con datos iniciales.
+- **Consultas Generales:**
+  - `ORM.py`: Funciones para realizar consultas generales en la base de datos.
 
 ## Uso
 
