@@ -1,4 +1,4 @@
-# ORM_CONCEPTS
+# ORM_CONCEPTS_DJANGO
 # ORM: Mapeo Objeto-Relacional (Sentencias | CRUD |)
 
 Este repositorio contiene un conjunto de scripts y funciones para trabajar con un sistema de gestión educativa utilizando Django y un ORM (Mapeo Objeto-Relacional) para la manipulación de datos en la base de datos.
