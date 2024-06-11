@@ -5,7 +5,7 @@ Este repositorio contiene un conjunto de scripts y funciones para trabajar con u
 educativa utilizando Django y un ORM (Mapeo Objeto-Relacional) para la manipulación de datos en la base de datos.
 
 Se incluyen los siguientes conceptos y operaciones:
-![Diagrama del Sistema](static\img\diagram.PNG)
+![Diagrama del Sistema](http://localhost:8000/media/diagram.png)
 
 ## Contenido
 
