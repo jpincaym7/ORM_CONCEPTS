@@ -1,9 +1,11 @@
-from datetime import date, time
+from datetime import date, datetime, time, timedelta
 from core.models import Period, Note, DetailNote, Student, Teacher, Asignature, ActiveManager, GeneralDelete
 from django.contrib.auth.models import User
 import random
 from create import periods, asignatures, students, teachers, students_data
-from django.db.models import Q
+from django.db.models import Q, F
+from django.utils import timezone
+from django.db.models.functions import Length
 """
     ----------------------------------------------------------------------------------------------
             |PERIODS | TEACHERS | STUDENTS | NOTES |                                                      
@@ -140,7 +142,7 @@ def consult_basic():
     consult_notes_minor(False)
 
 # ---> CALL THE FUNCTION TO SEE ITS FUNCTIONALITY <---
-consult_basic()
+
 
 def consult_logic():
     def student_consult(state):
@@ -171,7 +173,6 @@ def consult_logic():
             note_entries = [f"{note.estudiante_id.full_name()} - Recovery: {note.recovery}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Recovery con None o Nota2 > 9.0")
     notes_consult_elderly_nulls(False)
-consult_logic()
 
 def consult_notes_between():
     def consult_notes_elderly_range(state):
@@ -191,5 +192,129 @@ def consult_notes_between():
             notes = DetailNote.objects.filter(recovery__isnull=False)
             note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas cuya recuperación no es None")
-    consult_notes_null_filter(True)
+    consult_notes_null_filter(False)
+
+def consult_models_date():
+    def consult_models_last_year(state):
+        if state:
+            year_end = timezone.now() - timedelta(days=365)
+            notes = DetailNote.objects.filter(created__gte=year_end)
+            note_entries = [f"Year: {note.created.year} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            joiners(note_entries, "Creación de las notas en el último año")
+    
+    def consult_models_last_month(state):
+        if state:
+            month_end = timezone.now() - timedelta(days=30)
+            notes = DetailNote.objects.filter(created__gte=month_end)
+            note_entries = [f"Mes: {note.created.strftime('%B')} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            joiners(note_entries, "Creación de las notas en el último mes")
+    
+    def consult_models_last_day(state):
+        if state:
+            now = timezone.now()
+            last_day = now - timedelta(days=1)
+            notas_ultimo_dia = DetailNote.objects.filter(created__gte=last_day)
+            note_entries = [f"Fecha: {note.created} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notas_ultimo_dia]
+            joiners(note_entries, "Notas creadas en el ultimo dia")
+    def consult_models_before_2023(state):
+        if state:
+            start_of_2023 = timezone.make_aware(datetime(year=2023, month=1, day=1))
+            notes = DetailNote.objects.filter(created__lt=start_of_2023)
+            note_entries = [f"Fecha: {note.created.strftime('%Y-%m-%d')} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            joiners(note_entries, "Creación de las notas antes del año 2023")
+    
+    def consult_models_march_any_year(state):
+        if state:
+            notes = DetailNote.objects.filter(created__month=3)
+            note_entries = [f"Fecha: {note.created.strftime('%Y-%m-%d')} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            joiners(note_entries, "Creación de las notas en marzo de cualquier año")
+    
+    consult_models_last_year(False)
+    consult_models_last_month(False)
+    consult_models_last_day(False)
+    consult_models_before_2023(False)
+    consult_models_march_any_year(False)
+
+
+def consult_avanced_notes():
+    def consult_students_length(state):
+        if state:
+            students = Student.objects.annotate(
+                first_name_length=Length('first_name'),
+                last_name_length=Length('last_name')
+            ).filter(Q(first_name_length=10) | Q(last_name_length=10))
+            
+            note_entries = [f"Estudiante: {student.full_name()}" for student in students]
+            joiners(note_entries, "todos los estudiantes cuyo nombre o apellido tiene exactamente 10 caracteres")
+    
+    def consult_note1_and_note2_elderly(state):
+        if state:
+            elderly_notes = DetailNote.objects.filter(Q(note1__gt=7.5) & Q(note2__gt=7.5))
+            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in elderly_notes]
+            joiners(note_entries,"Nota1 y nota2 mayores a 7.5")
+    
+    def consult_note_null_note1_elderly(state):
+        if state:
+            notes = DetailNote.objects.filter(Q(recovery__isnull=False) & Q(note1__gt=F('note2')))
+            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery} - note1: {note.note1} > note2: {note.note2}" for note in notes]
+            joiners(note_entries, "Recuperación no nula y nota1 mayor que nota2")
+    
+    def consult_notes_elderly(state):
+        if state:
+            notes = DetailNote.objects.filter(Q(note1__gt=8.0) | Q(note2=7.5))
+            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1} note2: {note.note2}" for note in notes]
+            joiners(note_entries, "Nota1 mayor a 8.0 o nota2 igual a 7.5")
+
+    def consult_recovery_elderly_notes(state):
+        if state:
+            notes = DetailNote.objects.filter(Q(recovery__gt=F("note1")) & Q(recovery__gt=F("note2")))
+            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery} > note1: {note.note1} - note2: {note.note2}" for note in notes]
+            joiners(note_entries, "Recuperación mayor que nota1 y nota2")
+    
+    consult_recovery_elderly_notes(True)
+    consult_notes_elderly(False)
+    consult_note_null_note1_elderly(False)
+    consult_note1_and_note2_elderly(False)
+    consult_students_length(False)
+
+def subconsult_models():
+    def consult_recovery(state):
+        if state:
+            recovery_notes = DetailNote.objects.filter(recovery__isnull=False).distinct()
+            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery}" for note in recovery_notes]
+            joiners(note_entries, "Recuperación no nula")
+    
+    def consult_teacher_asignature_distinct(state):
+        asignature_name = "Algoritmo y Logica de Programación"
+        if state:
+        # Obtenemos la asignatura específica por su nombre
+            try:
+                asignature = Asignature.objects.get(description=asignature_name)
+            except Asignature.DoesNotExist:
+                print(f"No existe una asignatura con la descripción '{asignature_name}'")
+                return
+            
+            # Obtenemos los profesores que han dado la asignatura específica
+            teacher_ids = Note.objects.filter(asignature=asignature).values_list('teacher_id', flat=True).distinct()
+            
+            # Usamos una lista de comprensión para obtener los nombres completos de los profesores
+            note_entries = [
+                f"Profesor: {Teacher.objects.get(id=teacher_id).full_name()} - Asignatura: {asignature.description}"
+                for teacher_id in teacher_ids
+            ]
+            
+            # Llamar a la función joiners con las entradas formadas
+            joiners(note_entries, f"Profesores que han dado la asignatura '{asignature_name}'")
+    consult_teacher_asignature_distinct(True)
+    consult_recovery(False)
+    
+    
+"""""    
+consult_basic()
+consult_logic()
 consult_notes_between()
+consult_models_date()
+consult_avanced_notes()
+
+"""""
+subconsult_models()
