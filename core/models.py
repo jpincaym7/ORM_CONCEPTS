@@ -76,9 +76,9 @@ class Student(GeneralDelete):
         return self.full_name()
 
 class Note(GeneralDelete):
-    period = models.ForeignKey(Period, on_delete=models.CASCADE, related_name="notes")
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="notes")
-    asignature = models.ForeignKey(Asignature, on_delete=models.CASCADE, related_name="notes")
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, related_name="period_note")
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="teacher_note")
+    asignature = models.ForeignKey(Asignature, on_delete=models.CASCADE, related_name="asignature_note")
 
     class Meta:
         ordering = ['period', 'teacher', 'asignature']
