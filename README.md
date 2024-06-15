@@ -16,6 +16,8 @@ Se incluyen los siguientes conceptos y operaciones:
   - `create.py`: Scripts para crear y poblar la base de datos con datos iniciales.
 - **Consultas Generales:**
   - `ORM.py`: Funciones para realizar consultas generales en la base de datos.
+- **Consultas Logicas:**
+   - `ORM.py`: Funciones para realizar consultas lógicas en la base de datos
 
 ## Uso
 
@@ -30,6 +32,10 @@ Se incluyen los siguientes conceptos y operaciones:
 
 4. **Consultas Generales:**
    - Utiliza `consult_basic()` para realizar consultas generales en la base de datos. Este método proporciona consultas predefinidas para estudiantes, profesores, asignaturas y notas.
+
+5. **Consultas Logicas:**
+   - Utiliza `consult_logics()` para realizar consultas lógicas en la base de datos. Este método proporciona
+   consultas predefinidas para estudiantes, profesores, asignaturas y notas.
 
 ## Requisitos
 

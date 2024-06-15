@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta
 from core.models import Period, Note, DetailNote, Student, Teacher, Asignature, ActiveManager, GeneralDelete
+from myproject.utils import joiners
 from django.contrib.auth.models import User
 import random
 from create import periods, asignatures, students, teachers, students_data
@@ -18,89 +19,6 @@ from django.db.models.functions import Length
     ----------------------------------------------------------------------------------------------
     
 """
-
-def create_bulks(state):
-    if state:
-        #---->INSERT PERIODOS
-        periodos = []
-        for key, value in periods.items():
-            periodo = Period(description=value["description"], start_date=value["start_date"], end_date=value["end_date"], user=User.objects.get(username=value["user"]))
-            periodos.append(periodo)
-
-        Period.objects.bulk_create(periodos)
-
-        #---->INSERT Asignaturas
-        asignaturas = []
-        for key, value in asignatures.items():
-            asignatura = Asignature(description=value["description"], user=User.objects.get(username=value["user"]))
-            asignaturas.append(asignatura)
-
-        Asignature.objects.bulk_create(asignaturas)
-
-        #---->INSERT Profesores
-        profesores = []
-        for key, value in teachers.items():
-            profesor = Teacher(cedula=value["cedula"], first_name=value["first_name"], last_name=value["last_name"], user=User.objects.get(username=value["user"]))
-            profesores.append(profesor)
-
-        Teacher.objects.bulk_create(profesores)
-
-        #---->INSERT Estudiantes
-        estudiantes = []
-        for key, value in students.items():
-            estudiante = Student(cedula=value["cedula"], first_name=value["first_name"], last_name=value["last_name"], user=User.objects.get(username=value["user"]))
-            estudiantes.append(estudiante)
-
-        Student.objects.bulk_create(estudiantes)
-    else:
-        print("No se puede crear la base de datos")
-create_bulks(False)
-
-
-# ---> RELACIONES ONE TO MANY FOR NOTES, CREATE OBJECT FOR NOTES <---
-def note_create(state):
-    user = User.objects.get(username="davdev")
-    if state:
-        for i in range(1,11):
-            periodo = Period.objects.get(id=i)
-            profesor = Teacher.objects.get(id=i)
-            asignatura = Asignature.objects.get(id=i)
-            note = Note.objects.create(
-                period=periodo,
-                teacher=profesor,
-                asignature=asignatura,
-                user=user
-            )
-    else:
-        print("No se puede crear la base de datos")
-note_create(False)
-
-#---> RELACION ONE TO MANY FOR DETAILS_NOTE (SENTENCE: CREATE) <---
-def create_detail(state):
-    user = User.objects.get(username="davdev")
-    if state:
-        for data_detail in students_data.values():
-            detail_note = DetailNote(
-                note = data_detail["note"],
-                estudiante_id=data_detail["student"],
-                note1=data_detail["note1"],
-                note2=data_detail["note2"],
-                recovery=data_detail["recovery"],
-                observations=data_detail["observations"],
-                user=user
-            )
-            detail_note.save()
-            print("REGISTROS GUARDADOS CON EXITO")
-    else:
-        print("NO SE GUARDARON LOS REGISTROS")
-create_detail(False)
-
-# ---> FUNCTION JOIN FOR CONSULTS GENERALS <---
-def joiners(listers, title):
-    print(f"\n{title}\n" + "="*len(title))
-    for i, context in enumerate(listers, start=1):
-        print(f"{i:02d}. {context}")
-    print("="*len(title) + "\n")
 
 # ---> GENERAL BASIC CONSULTATION <---
 def consult_basic():
@@ -126,7 +44,7 @@ def consult_basic():
     def consult_notes_elderly(states):
         if states:
             note1 = DetailNote.active_objects.filter(note1__gt=8.0) 
-            lister = [[note.estudiante_id.full_name(), note.note1] for note in note1]
+            lister = [[note.estudiante.full_name(), note.note1] for note in note1]
             print("Listado de Estudiantes y Notas:\n" + "-"*77)
             joiners([f"Nombre del Estudiante: {estudiante:<30} | Nota1 ->: {nota}" for estudiante, nota in lister], "Notas mayores a 8.0")
             print("-"*77)
@@ -135,7 +53,7 @@ def consult_basic():
     def consult_notes_minor(states):
         if states:
             note2 = DetailNote.active_objects.filter(note2__lt=9.0)
-            lister = [[note.estudiante_id.full_name(), note.note2] for note in note2]
+            lister = [[note.estudiante.full_name(), note.note2] for note in note2]
             print("Listado de Estudiantes y Notas:\n" + "-"*77)
             joiners([f"Nombre del Estudiante: {estudiante:<30} | Nota2 ->: {nota}" for estudiante, nota in lister], "Notas menores a 9.0")
             print("-"*77)
@@ -163,13 +81,13 @@ def consult_logic():
     def notes_consult_elderly_minor(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(note1__gt=7.0) & Q(note2__lt=8.0))
-            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas con Nota1 > 7.0 y Nota2 < 8.0")
     notes_consult_elderly_minor(False)
     def notes_consult_elderly_nulls(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(recovery__isnull=True) | Q(note2__gt=9.0))
-            note_entries = [f"{note.estudiante_id.full_name()} - Recovery: {note.recovery}, Nota2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Recovery: {note.recovery}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Recovery con None o Nota2 > 9.0")
     notes_consult_elderly_nulls(False)
 
@@ -177,19 +95,19 @@ def consult_notes_between():
     def consult_notes_elderly_range(state):
         if state:
             notes = DetailNote.active_objects.filter(note1__range = (7.0, 9.0))
-            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1}" for note in notes]
             joiners(note_entries, "Notas con Nota1 entre 7.0 y 9.0")
     consult_notes_elderly_range(False)
     def consult_notes_outside_range(state):
         if state:
             notes = DetailNote.active_objects.filter(~Q(note2__range= (6.0, 8.0)))
-            note_entries = [f"{note.estudiante_id.full_name()} - Nota2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas con Nota2 fuera del rango entre 6.0 y 8.0")
     consult_notes_outside_range(False)
     def consult_notes_null_filter(state):
         if state:
             notes = DetailNote.active_objects.filter(recovery__isnull=False)
-            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas cuya recuperación no es None")
     consult_notes_null_filter(False)
 
@@ -248,25 +166,25 @@ def consult_avanced_notes():
     def consult_note1_and_note2_elderly(state):
         if state:
             elderly_notes = DetailNote.active_objects.filter(Q(note1__gt=7.5) & Q(note2__gt=7.5))
-            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in elderly_notes]
+            note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in elderly_notes]
             joiners(note_entries,"Nota1 y nota2 mayores a 7.5")
     
     def consult_note_null_note1_elderly(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(recovery__isnull=False) & Q(note1__gt=F('note2')))
-            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery} - note1: {note.note1} > note2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Recuperación: {note.recovery} - note1: {note.note1} > note2: {note.note2}" for note in notes]
             joiners(note_entries, "Recuperación no nula y nota1 mayor que nota2")
     
     def consult_notes_elderly(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(note1__gt=8.0) | Q(note2=7.5))
-            note_entries = [f"{note.estudiante_id.full_name()} - Nota1: {note.note1} note2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1} note2: {note.note2}" for note in notes]
             joiners(note_entries, "Nota1 mayor a 8.0 o nota2 igual a 7.5")
 
     def consult_recovery_elderly_notes(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(recovery__gt=F("note1")) & Q(recovery__gt=F("note2")))
-            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery} > note1: {note.note1} - note2: {note.note2}" for note in notes]
+            note_entries = [f"{note.estudiante.full_name()} - Recuperación: {note.recovery} > note1: {note.note1} - note2: {note.note2}" for note in notes]
             joiners(note_entries, "Recuperación mayor que nota1 y nota2")
     
     consult_recovery_elderly_notes(True)
@@ -279,7 +197,7 @@ def subconsult_models():
     def consult_recovery(state):
         if state:
             recovery_notes = DetailNote.active_objects.filter(recovery__isnull=False).distinct()
-            note_entries = [f"{note.estudiante_id.full_name()} - Recuperación: {note.recovery}" for note in recovery_notes]
+            note_entries = [f"{note.estudiante.full_name()} - Recuperación: {note.recovery}" for note in recovery_notes]
             joiners(note_entries, "Recuperación no nula")
     
     def consult_teacher_asignature_distinct(state):
@@ -332,7 +250,7 @@ def subconsult_models():
     def subconsult_notes_list(state):
         if state:
             notes_list = DetailNote.active_objects.filter(note1__in=[7.0, 8.0, 9.0])
-            data_notes_list = [f"nota1: {subconsult.note1} del estudiante: {subconsult.estudiante_id.full_name()} en la lista" for subconsult in notes_list ]
+            data_notes_list = [f"nota1: {subconsult.note1} del estudiante: {subconsult.estudiante.full_name()} en la lista" for subconsult in notes_list ]
             if notes_list.exists():
                 joiners(data_notes_list, "Notas con nota1 en la lista [7.0, 8.0, 9-0]")
     
@@ -348,21 +266,21 @@ def subconsult_models():
             recovery_not_list = DetailNote.active_objects.filter(
             ~Q(recovery__in=[8.0, 9.0, 10.0]) & ~Q(recovery__isnull=True)
             )
-            data_recovery_not_list = [f"recovery: {subconsult.recovery} del estudiante {subconsult.estudiante_id.full_name()}" for subconsult in recovery_not_list]
+            data_recovery_not_list = [f"recovery: {subconsult.recovery} del estudiante {subconsult.estudiante.full_name()}" for subconsult in recovery_not_list]
             if recovery_not_list.exists():
                 joiners(data_recovery_not_list, "Recuperaciones no en la lista [8.0, 9.0, 10.0]")
     
     def subconsult_notes_students(state):
         if state:
-            notes_sum = DetailNote.active_objects.filter(estudiante_id=1).annotate(sum_notes=Sum(F("note1") + F("note2")))
-            data_notes_sum = [f"suma de notas: (note1: {subconsult.note1} + note2: {subconsult.note2}) es: {subconsult.sum_notes} el total del estudiante: {subconsult.estudiante_id.full_name()}" for subconsult in notes_sum ]
+            notes_sum = DetailNote.active_objects.filter(estudiante=1).annotate(sum_notes=Sum(F("note1") + F("note2")))
+            data_notes_sum = [f"suma de notas: (note1: {subconsult.note1} + note2: {subconsult.note2}) es: {subconsult.sum_notes} el total del estudiante: {subconsult.estudiante.full_name()}" for subconsult in notes_sum ]
             if notes_sum.exists():
                 joiners(data_notes_sum, "Suma de notas de los estudiantes")
     
     #36. Nota máxima obtenida por un estudiante:
     def subconsult_max_note(state):
         if state:
-            max_note = DetailNote.active_objects.values('estudiante_id').annotate(
+            max_note = DetailNote.active_objects.values('estudiante').annotate(
                 max_total_note=Max(F('note1') + F('note2')),
                 student_name=F('estudiante_id__first_name')
             ).order_by('-max_total_note').first()
@@ -394,20 +312,20 @@ def subconsult_models():
     
     def count_total_notes_student(state):
         if state:
-            count_notes = DetailNote.active_objects.filter(estudiante_id=5).annotate(count_note=Count("id"))
-            data_count_notes = [f"El estudiante {subconsult.estudiante_id.full_name()} tiene {subconsult.count_note}" 
+            count_notes = DetailNote.active_objects.filter(estudiante=5).annotate(count_note=Count("id"))
+            data_count_notes = [f"El estudiante {subconsult.estudiante.full_name()} tiene {subconsult.count_note}" 
                                 for subconsult in count_notes]
             joiners(data_count_notes, "Total de notas registradas")
 
     def avg_total_notes_students(state):
         if state:
-            avg_notes = DetailNote.active_objects.filter(estudiante_id=5).annotate(
+            avg_notes = DetailNote.active_objects.filter(estudiante=5).annotate(
                     avg_notes=ExpressionWrapper(
                         (F('note1') + F('note2')) / 2.0,
                         output_field=DecimalField(max_digits=5, decimal_places=2)
                     )
                 )
-            data_avg_notes = [f"El estudiante {subconsult.estudiante_id.full_name()} tiene de promedio entre las dos notas: {subconsult.avg_notes}" 
+            data_avg_notes = [f"El estudiante {subconsult.estudiante.full_name()} tiene de promedio entre las dos notas: {subconsult.avg_notes}" 
                               for subconsult in avg_notes]
             joiners(data_avg_notes, "Promedio de las dos notas de los estudiantes")
 
@@ -432,77 +350,83 @@ def related_models_invers():
         if state:
             student = Student.active_objects.prefetch_related('student_detail').get(id=5)
             detalles_notas = student.student_detail.all()
-            data_details = []
-            for detalle in detalles_notas:
-                data_details.append(f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}")
+            data_details = [f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in detalles_notas]
             joiners(data_details, "Detalles del estudiante")
+
     students_notes_detail(False)
-    
+
     def notes_periods_especific(state):
         if state:
-            notas = Note.objects.filter(asignature_id=1, period_id=1).prefetch_related('Notas')
-            for nota in notas:
-                print(f"\nPeriodo: {nota.period.description}")
-                print(f"Profesor: {nota.teacher.full_name()}")
-                print(f"Asignatura: {nota.asignature.description}")
+            notas = Note.active_objects.filter(asignature_id=1, period_id=1).prefetch_related('Notas')
+            data_details = [f"Periodo: {nota.period.description}\nProfesor: {nota.teacher.full_name()}\nAsignatura: {nota.asignature.description}\n" + "\n".join([f"Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
+            joiners(data_details, "Notas del periodo específico")
 
-                # Iteramos sobre los detalles de notas asociados a esta nota
-                for detalle in nota.Notas.all():
-                    print(f"  Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}")
     notes_periods_especific(False)
-    
+
     def notes_teacher_especific(state):
         if state:
-            notas = Note.objects.filter(teacher_id=2).prefetch_related('Notas')
-            for nota in notas:
-                print(f"\nProfesor: {nota.teacher.full_name()}")
-                for detalle in nota.Notas.all():
-                    print(f"   Su Estudiante: {detalle.estudiante_id.full_name()}")
-                    print(f"  Periodo: {detalle.note.period.description}")
-                    print(f"  Asignatura: {detalle.note.asignature.description}")
-                    print(f"  Nota 1: {detalle.note1}")
-                    print(f"  Nota 2: {detalle.note2}")
-                    print(f"  Recuperación: {detalle.recovery}")
-                    print(f"  Observaciones: {detalle.observations}")
+            notas = Note.active_objects.filter(teacher_id=2).prefetch_related('Notas')
+            data_details = [f"Profesor: {nota.teacher.full_name()}\n" + "\n".join([f"Estudiante: {detalle.estudiante.full_name()}\nPeriodo: {detalle.note.period.description}\nAsignatura: {detalle.note.asignature.description}\nNota 1: {detalle.note1}\nNota 2: {detalle.note2}\nRecuperación: {detalle.recovery}\nObservaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
+            joiners(data_details, "Notas del profesor específico")
+
     notes_teacher_especific(False)
-    
+
     def notes_student_elderly(state):
         if state:
             student = Student.active_objects.prefetch_related('student_detail').get(id=8)
             detalles_notas = student.student_detail.filter(note1__gt=16.00)
-            data_details = []
-            for detalle in detalles_notas:
-                data_details.append(f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}")
+            data_details = [f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in detalles_notas]
             joiners(data_details, "Detalles del estudiante")
+
     notes_student_elderly(True)
-            
+
     def student_notes_period(state):
         if state:
             student = Student.objects.get(id=5)
-            student_notes = DetailNote.objects.filter(estudiante_id=student).select_related('note__period', 'note__teacher', 'note__asignature').order_by('note__period__description', 'note__teacher__first_name', 'note__asignature__description')
-            for detail_note in student_notes:
-                print(f"Estudiante: {student.full_name()}")
-                print(f"Periodo: {detail_note.note.period.description}")
-                print(f"Profesor: {detail_note.note.teacher.full_name()}")
-                print(f"Asignatura: {detail_note.note.asignature.description}")
-                print(f"Nota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}")
-                print()
-    student_notes_period(True)
-    
-    
-    
-    
-    
-    
-"""""    
-consult_basic()
+            student_notes = DetailNote.active_objects.filter(estudiante=student).select_related('note__period', 'note__teacher', 'note__asignature').order_by('note__period__description', 'note__teacher__first_name', 'note__asignature__description')
+            data_details = [f"Estudiante: {student.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in student_notes]
+            joiners(data_details, "Notas del estudiante en periodo")
 
+    student_notes_period(False)
+
+    def average_notes_student_period(state, student_id, period_id):
+        if state:
+            student = Student.active_objects.get(id=student_id)
+            detail_notes = student.student_detail.filter(note__period_id=period_id)
+            total_notes = detail_notes.count()
+            if total_notes > 0:
+                sum_notes = sum(detalle.note1 + detalle.note2 for detalle in detail_notes)
+                average = sum_notes / (2 * total_notes)
+                print(f"El promedio de las notas del estudiante {student.full_name()} en el periodo {period_id} es {average:.2f}")
+            else:
+                print(f"No hay notas para el estudiante {student.full_name()} en el periodo {period_id}")
+
+    average_notes_student_period(False, student_id=5, period_id=5)
+
+    def notes_with_specific_observation(state, observation):
+        if state:
+            detail_notes = DetailNote.active_objects.filter(observations__icontains=observation).select_related('note__asignature', 'note__period', 'note__teacher', 'estudiante')
+            data_details = [f"Estudiante: {detail_note.estudiante.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
+            joiners(data_details, "Notas con observación específica")
+
+    notes_with_specific_observation(False, observation="Necesita mejorar.")
+
+    def notes_student_ordered_by_asignature(state, student_id):
+        if state:
+            student = Student.active_objects.get(id=student_id)
+            detail_notes = student.student_detail.select_related('note__asignature').order_by('note__asignature__description')
+            data_details = [f"Estudiante: {student.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
+            joiners(data_details, "Notas del estudiante ordenadas por asignatura")
+
+    notes_student_ordered_by_asignature(False, student_id=5)
+
+    
+    
+      
+consult_basic()
 consult_notes_between()
 consult_models_date()
 consult_avanced_notes()
-
-"""""
-
-#consult_logic()
-#subconsult_models()
+consult_logic()
+subconsult_models()
 related_models_invers()

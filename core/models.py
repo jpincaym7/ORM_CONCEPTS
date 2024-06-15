@@ -18,6 +18,9 @@ class GeneralDelete(models.Model):
         self.state = False
         self.save()
 
+    def delete_physical(self):
+        super().delete()
+    
     class Meta:
         abstract = True
 
@@ -90,7 +93,7 @@ class Note(GeneralDelete):
 
 class DetailNote(GeneralDelete):
     note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="Notas", null=True)
-    estudiante_id = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="student_detail", null=True)
+    estudiante = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="student_detail", null=True)
     note1 = models.DecimalField(max_digits=5, decimal_places=2)
     note2 = models.DecimalField(max_digits=5, decimal_places=2)
     recovery = models.DecimalField(max_digits=5, decimal_places=2, null=True)
@@ -100,6 +103,6 @@ class DetailNote(GeneralDelete):
         ordering = ['recovery']
         verbose_name = 'DetailNote'
         verbose_name_plural = 'DetailNotes'
-
+    
     def __str__(self):
-        return f"note: {self.note}, student: {self.estudiante_id},Note 1: {self.note1}, Note 2: {self.note2}, Recovery: {self.recovery}, Observations: {self.observations}"
+        return f"note: {self.note}, student: {self.estudiante},Note 1: {self.note1}, Note 2: {self.note2}, Recovery: {self.recovery}, Observations: {self.observations}"

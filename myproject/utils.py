@@ -3,6 +3,13 @@ from django.core.validators import RegexValidator
 
 phone_regex = RegexValidator(regex=r'^\d{9,15}$', message="El número de teléfono debe contener entre 9 y 15 dígitos.")
  
+# ---> FUNCTION JOIN FOR CONSULTS GENERALS <---
+def joiners(listers, title):
+    print(f"\n{title}\n" + "="*len(title))
+    for i, context in enumerate(listers, start=1):
+        print(f"{i:02d}. {context}")
+    print("="*len(title) + "\n") 
+ 
 def valida_cedula(value):
     cedula = str(value)
     if not cedula.isdigit():
