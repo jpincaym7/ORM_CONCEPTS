@@ -3,7 +3,7 @@ from core.models import Period, Note, DetailNote, Student, Teacher, Asignature, 
 from myproject.utils import joiners
 from django.contrib.auth.models import User
 import random
-from create import periods, asignatures, students, teachers, students_data
+# from create import periods, asignatures, students, teachers, students_data
 from django.db.models import Q, F, Sum, Max, Min, Count, ExpressionWrapper, DecimalField
 from django.utils import timezone
 from django.db.models.functions import Length
@@ -27,19 +27,19 @@ def consult_basic():
         if state:
             students = Student.active_objects.filter(first_name__istartswith="est")
             joiners(students, "Estudiantes cuyo nombre empieza con 'Est'")
-    consult_student(False)
+    consult_student(True)
     # ---> CONSULT TEACHERS WHERE FIRST_NAME START IN "OR" <---
     def consult_teacher(state):
         if state:
             teachers = Teacher.active_objects.filter(first_name__icontains="or")
             joiners(teachers, "Profesores cuyo nombre contiene 'or'")
-    consult_teacher(False)
+    consult_teacher(True)
     # ---> CONSULT STUDENTS WHERE DESCRIPTION END IN "10" <---
     def consult_asignatures_end10(state):
         if state:
             asignatures = Asignature.active_objects.filter(description__endswith="10")
             joiners(asignatures, "Asignaturas cuya descripción termina en '10'")
-    consult_asignatures_end10(False)
+    consult_asignatures_end10(True)
     # ---> SEE NOTES WHERE THEY ARE GRATHER THAN 8.0 <---
     def consult_notes_elderly(states):
         if states:
@@ -48,7 +48,7 @@ def consult_basic():
             print("Listado de Estudiantes y Notas:\n" + "-"*77)
             joiners([f"Nombre del Estudiante: {estudiante:<30} | Nota1 ->: {nota}" for estudiante, nota in lister], "Notas mayores a 8.0")
             print("-"*77)
-    consult_notes_elderly(False)
+    consult_notes_elderly(True)
     # ---> SEE NOTES WHERE THEY ARE LESS THAN 9.0 <---
     def consult_notes_minor(states):
         if states:
@@ -57,7 +57,7 @@ def consult_basic():
             print("Listado de Estudiantes y Notas:\n" + "-"*77)
             joiners([f"Nombre del Estudiante: {estudiante:<30} | Nota2 ->: {nota}" for estudiante, nota in lister], "Notas menores a 9.0")
             print("-"*77)
-    consult_notes_minor(False)
+    consult_notes_minor(True)
 
 # ---> CALL THE FUNCTION TO SEE ITS FUNCTIONALITY <---
 
@@ -67,29 +67,29 @@ def consult_logic():
             students = Student.active_objects.filter(Q(first_name__istartswith="Est") & Q(cedula__endswith=1)).values_list("first_name", "cedula")
             student_entries = [f"{student[0]} - {student[1]}" for student in students]
             joiners(student_entries, "Estudiantes que comienzan por 'Est' y terminan en '1'")
-    student_consult(False)
+    student_consult(True)
     def asignature_consult(state):
         if state:
             asignatures = Asignature.active_objects.filter(Q(description__icontains="Asig") | Q(description__iendswith="5"))
             joiners(asignatures, f"Asignaturas que contienen 'Asig' o terminan en '5' (Total: {asignatures.count()})")
-    asignature_consult(False)
+    asignature_consult(True)
     def teachers_consult(state):
         if state:
             teachers = Teacher.active_objects.filter(~Q(first_name__icontains="or") & ~Q(last_name__icontains="or"))
             joiners(teachers, "Profesores que no contienen 'or'")
-    teachers_consult(False)
+    teachers_consult(True)
     def notes_consult_elderly_minor(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(note1__gt=7.0) & Q(note2__lt=8.0))
             note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas con Nota1 > 7.0 y Nota2 < 8.0")
-    notes_consult_elderly_minor(False)
+    notes_consult_elderly_minor(True)
     def notes_consult_elderly_nulls(state):
         if state:
             notes = DetailNote.active_objects.filter(Q(recovery__isnull=True) | Q(note2__gt=9.0))
             note_entries = [f"{note.estudiante.full_name()} - Recovery: {note.recovery}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Recovery con None o Nota2 > 9.0")
-    notes_consult_elderly_nulls(False)
+    notes_consult_elderly_nulls(True)
 
 def consult_notes_between():
     def consult_notes_elderly_range(state):
@@ -97,19 +97,19 @@ def consult_notes_between():
             notes = DetailNote.active_objects.filter(note1__range = (7.0, 9.0))
             note_entries = [f"{note.estudiante.full_name()} - Nota1: {note.note1}" for note in notes]
             joiners(note_entries, "Notas con Nota1 entre 7.0 y 9.0")
-    consult_notes_elderly_range(False)
+    consult_notes_elderly_range(True)
     def consult_notes_outside_range(state):
         if state:
             notes = DetailNote.active_objects.filter(~Q(note2__range= (6.0, 8.0)))
             note_entries = [f"{note.estudiante.full_name()} - Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas con Nota2 fuera del rango entre 6.0 y 8.0")
-    consult_notes_outside_range(False)
+    consult_notes_outside_range(True)
     def consult_notes_null_filter(state):
         if state:
             notes = DetailNote.active_objects.filter(recovery__isnull=False)
             note_entries = [f"{note.estudiante.full_name()} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Notas cuya recuperación no es None")
-    consult_notes_null_filter(False)
+    consult_notes_null_filter(True)
 
 def consult_models_date():
     def consult_models_last_year(state):
@@ -146,11 +146,11 @@ def consult_models_date():
             note_entries = [f"Fecha: {note.created.strftime('%Y-%m-%d')} - Recuperación: {note.recovery}, Nota1: {note.note1}, Nota2: {note.note2}" for note in notes]
             joiners(note_entries, "Creación de las notas en marzo de cualquier año")
     
-    consult_models_last_year(False)
-    consult_models_last_month(False)
-    consult_models_last_day(False)
-    consult_models_before_2023(False)
-    consult_models_march_any_year(False)
+    consult_models_last_year(True)
+    consult_models_last_month(True)
+    consult_models_last_day(True)
+    consult_models_before_2023(True)
+    consult_models_march_any_year(True)
 
 def consult_avanced_notes():
     def consult_students_length(state):
@@ -188,10 +188,10 @@ def consult_avanced_notes():
             joiners(note_entries, "Recuperación mayor que nota1 y nota2")
     
     consult_recovery_elderly_notes(True)
-    consult_notes_elderly(False)
-    consult_note_null_note1_elderly(False)
-    consult_note1_and_note2_elderly(False)
-    consult_students_length(False)
+    consult_notes_elderly(True)
+    consult_note_null_note1_elderly(True)
+    consult_note1_and_note2_elderly(True)
+    consult_students_length(True)
 
 def subconsult_models():
     def consult_recovery(state):
@@ -330,19 +330,19 @@ def subconsult_models():
             joiners(data_avg_notes, "Promedio de las dos notas de los estudiantes")
 
     avg_total_notes_students(True)
-    count_total_notes_student(False)
-    subconsult_min_note(False)
-    subconsult_max_note(False)
-    subconsult_notes_students(False)
-    subconsult_recovery_not_list(False)
-    subconsult_notes_range(False)
-    subconsult_notes_list(False)
-    subconsult_notes_minor(False)
-    subconsult_notes_elderly(False)
-    subconsult_studentes_recovery_not_null(False)
-    subconsult_asignature_not_notes(False)
-    consult_teacher_asignature_distinct(False)
-    consult_recovery(False)
+    count_total_notes_student(True)
+    subconsult_min_note(True)
+    subconsult_max_note(True)
+    subconsult_notes_students(True)
+    subconsult_recovery_not_list(True)
+    subconsult_notes_range(True)
+    subconsult_notes_list(True)
+    subconsult_notes_minor(True)
+    subconsult_notes_elderly(True)
+    subconsult_studentes_recovery_not_null(True)
+    subconsult_asignature_not_notes(True)
+    consult_teacher_asignature_distinct(True)
+    consult_recovery(True)
     
 
 def related_models_invers():
@@ -353,7 +353,7 @@ def related_models_invers():
             data_details = [f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in detalles_notas]
             joiners(data_details, "Detalles del estudiante")
 
-    students_notes_detail(False)
+    students_notes_detail(True)
 
     def notes_periods_especific(state):
         if state:
@@ -361,7 +361,7 @@ def related_models_invers():
             data_details = [f"Periodo: {nota.period.description}\nProfesor: {nota.teacher.full_name()}\nAsignatura: {nota.asignature.description}\n" + "\n".join([f"Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
             joiners(data_details, "Notas del periodo específico")
 
-    notes_periods_especific(False)
+    notes_periods_especific(True)
 
     def notes_teacher_especific(state):
         if state:
@@ -369,7 +369,7 @@ def related_models_invers():
             data_details = [f"Profesor: {nota.teacher.full_name()}\n" + "\n".join([f"Estudiante: {detalle.estudiante.full_name()}\nPeriodo: {detalle.note.period.description}\nAsignatura: {detalle.note.asignature.description}\nNota 1: {detalle.note1}\nNota 2: {detalle.note2}\nRecuperación: {detalle.recovery}\nObservaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
             joiners(data_details, "Notas del profesor específico")
 
-    notes_teacher_especific(False)
+    notes_teacher_especific(True)
 
     def notes_student_elderly(state):
         if state:
@@ -387,7 +387,7 @@ def related_models_invers():
             data_details = [f"Estudiante: {student.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in student_notes]
             joiners(data_details, "Notas del estudiante en periodo")
 
-    student_notes_period(False)
+    student_notes_period(True)
 
     def average_notes_student_period(state, student_id, period_id):
         if state:
@@ -401,7 +401,7 @@ def related_models_invers():
             else:
                 print(f"No hay notas para el estudiante {student.full_name()} en el periodo {period_id}")
 
-    average_notes_student_period(False, student_id=5, period_id=5)
+    average_notes_student_period(True, student_id=5, period_id=5)
 
     def notes_with_specific_observation(state, observation):
         if state:
@@ -409,7 +409,7 @@ def related_models_invers():
             data_details = [f"Estudiante: {detail_note.estudiante.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
             joiners(data_details, "Notas con observación específica")
 
-    notes_with_specific_observation(False, observation="Necesita mejorar.")
+    notes_with_specific_observation(True, observation="Necesita mejorar.")
 
     def notes_student_ordered_by_asignature(state, student_id):
         if state:
@@ -418,15 +418,15 @@ def related_models_invers():
             data_details = [f"Estudiante: {student.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
             joiners(data_details, "Notas del estudiante ordenadas por asignatura")
 
-    notes_student_ordered_by_asignature(False, student_id=5)
+    notes_student_ordered_by_asignature(True, student_id=5)
 
     
     
       
-consult_basic()
-consult_notes_between()
-consult_models_date()
-consult_avanced_notes()
-consult_logic()
-subconsult_models()
-related_models_invers()
+#consult_basic()
+#consult_notes_between()
+#consult_models_date()
+#consult_avanced_notes()
+#consult_logic()
+#subconsult_models()
+#related_models_invers()
