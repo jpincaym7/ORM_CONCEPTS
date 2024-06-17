@@ -21,6 +21,9 @@ class GeneralDelete(models.Model):
     def delete_physical(self):
         super().delete()
     
+    def get_fields(self):
+        return [(field.name, field.value_from_object(self)) for field in self._meta.fields]
+    
     class Meta:
         abstract = True
 

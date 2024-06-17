@@ -346,49 +346,90 @@ def subconsult_models():
     
 
 def related_models_invers():
-    def students_notes_detail(state):
+    # 41. Obtener todas las notas de un período específico
+    def notes_period_specific(state, period_id):
         if state:
-            student = Student.active_objects.prefetch_related('student_detail').get(id=5)
-            detalles_notas = student.student_detail.all()
-            data_details = [f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in detalles_notas]
-            joiners(data_details, "Detalles del estudiante")
+            notas = Note.active_objects.filter(period_id=period_id).prefetch_related('Notas')
+            data_details = [
+                f"Periodo: {nota.period.description}\nProfesor: {nota.teacher.full_name()}\nAsignatura: {nota.asignature.description}\n" + 
+                "\n".join([
+                    f"Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}"
+                    for detalle in nota.Notas.all()
+                ]) 
+                for nota in notas
+            ]
+            joiners(data_details, "Notas del período específico")
 
-    students_notes_detail(True)
+    notes_period_specific(True, period_id=1)
 
-    def notes_periods_especific(state):
+    # 42. Consultar todas las notas de una asignatura dada en un período
+    def notes_subject_period(state, asignature_id, period_id):
         if state:
-            notas = Note.active_objects.filter(asignature_id=1, period_id=1).prefetch_related('Notas')
-            data_details = [f"Periodo: {nota.period.description}\nProfesor: {nota.teacher.full_name()}\nAsignatura: {nota.asignature.description}\n" + "\n".join([f"Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
-            joiners(data_details, "Notas del periodo específico")
+            notas = Note.active_objects.filter(asignature_id=asignature_id, period_id=period_id).prefetch_related('Notas')
+            data_details = [
+                f"Asignatura: {nota.asignature.description}\nPeriodo: {nota.period.description}\nProfesor: {nota.teacher.full_name()}\n" + 
+                "\n".join([
+                    f"Nota 1: {detalle.note1}, Nota 2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}"
+                    for detalle in nota.Notas.all()
+                ])
+                for nota in notas
+            ]
+            joiners(data_details, "Notas de la asignatura en el período")
 
-    notes_periods_especific(True)
+    notes_subject_period(True, asignature_id=1, period_id=1)
 
-    def notes_teacher_especific(state):
+    # 43. Obtener todas las notas de un profesor en particular
+    def notes_teacher_specific(state, teacher_id):
         if state:
-            notas = Note.active_objects.filter(teacher_id=2).prefetch_related('Notas')
-            data_details = [f"Profesor: {nota.teacher.full_name()}\n" + "\n".join([f"Estudiante: {detalle.estudiante.full_name()}\nPeriodo: {detalle.note.period.description}\nAsignatura: {detalle.note.asignature.description}\nNota 1: {detalle.note1}\nNota 2: {detalle.note2}\nRecuperación: {detalle.recovery}\nObservaciones: {detalle.observations}" for detalle in nota.Notas.all()]) for nota in notas]
+            notas = Note.active_objects.filter(teacher_id=teacher_id).prefetch_related('Notas')
+            data_details = [
+                f"Profesor: {nota.teacher.full_name()}\n" +
+                "\n".join([
+                    f"Estudiante: {detalle.estudiante.full_name()}\nPeriodo: {detalle.note.period.description}\nAsignatura: {detalle.note.asignature.description}\nNota 1: {detalle.note1}\nNota 2: {detalle.note2}\nRecuperación: {detalle.recovery}\nObservaciones: {detalle.observations}"
+                    for detalle in nota.Notas.all()
+                ])
+                for nota in notas
+            ]
             joiners(data_details, "Notas del profesor específico")
 
-    notes_teacher_especific(True)
+    notes_teacher_specific(True, teacher_id=2)
 
-    def notes_student_elderly(state):
+    # 44. Consultar todas las notas de un estudiante con notas superiores a un valor dado
+    def notes_student_above_value(state, student_id, value):
         if state:
-            student = Student.active_objects.prefetch_related('student_detail').get(id=8)
-            detalles_notas = student.student_detail.filter(note1__gt=16.00)
-            data_details = [f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}" for detalle in detalles_notas]
-            joiners(data_details, "Detalles del estudiante")
+            student = Student.active_objects.prefetch_related('student_detail').get(id=student_id)
+            detalles_notas = student.student_detail.filter(note1__gt=value)
+            data_details = [
+                f"Estudiante: {student.full_name()} - Asignatura: {detalle.note.asignature.description}, Nota1: {detalle.note1}, Nota2: {detalle.note2}, Recuperación: {detalle.recovery}, Observaciones: {detalle.observations}"
+                for detalle in detalles_notas
+            ]
+            joiners(data_details, "Notas del estudiante superiores a un valor dado")
 
-    notes_student_elderly(True)
+    notes_student_above_value(True, student_id=8, value=16.00)
 
-    def student_notes_period(state):
+    # 45. Obtener todas las notas de un estudiante ordenadas por período
+    def notes_student_ordered_by_period(state, student_id):
         if state:
-            student = Student.objects.get(id=5)
+            student = Student.active_objects.get(id=student_id)
             student_notes = DetailNote.active_objects.filter(estudiante=student).select_related('note__period', 'note__teacher', 'note__asignature').order_by('note__period__description', 'note__teacher__first_name', 'note__asignature__description')
-            data_details = [f"Estudiante: {student.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in student_notes]
-            joiners(data_details, "Notas del estudiante en periodo")
+            data_details = [
+                f"Estudiante: {student.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n"
+                for detail_note in student_notes
+            ]
+            joiners(data_details, "Notas del estudiante ordenadas por período")
 
-    student_notes_period(True)
+    notes_student_ordered_by_period(True, student_id=5)
 
+    # 46. Consultar la cantidad total de notas para un estudiante
+    def total_notes_student(state, student_id):
+        if state:
+            student = Student.active_objects.get(id=student_id)
+            total_notes = DetailNote.active_objects.filter(estudiante=student).count()
+            print(f"El estudiante {student.full_name()} tiene un total de {total_notes} notas.")
+
+    total_notes_student(True, student_id=5)
+
+    # 47. Calcular el promedio de las notas de un estudiante en un período dado
     def average_notes_student_period(state, student_id, period_id):
         if state:
             student = Student.active_objects.get(id=student_id)
@@ -397,25 +438,33 @@ def related_models_invers():
             if total_notes > 0:
                 sum_notes = sum(detalle.note1 + detalle.note2 for detalle in detail_notes)
                 average = sum_notes / (2 * total_notes)
-                print(f"El promedio de las notas del estudiante {student.full_name()} en el periodo {period_id} es {average:.2f}")
+                print(f"El promedio de las notas del estudiante {student.full_name()} en el período {period_id} es {average:.2f}")
             else:
-                print(f"No hay notas para el estudiante {student.full_name()} en el periodo {period_id}")
+                print(f"No hay notas para el estudiante {student.full_name()} en el período {period_id}")
 
     average_notes_student_period(True, student_id=5, period_id=5)
 
+    # 48. Consultar todas las notas con una observación específica
     def notes_with_specific_observation(state, observation):
         if state:
             detail_notes = DetailNote.active_objects.filter(observations__icontains=observation).select_related('note__asignature', 'note__period', 'note__teacher', 'estudiante')
-            data_details = [f"Estudiante: {detail_note.estudiante.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
+            data_details = [
+                f"Estudiante: {detail_note.estudiante.full_name()}\nPeriodo: {detail_note.note.period.description}\nProfesor: {detail_note.note.teacher.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n"
+                for detail_note in detail_notes
+            ]
             joiners(data_details, "Notas con observación específica")
 
     notes_with_specific_observation(True, observation="Necesita mejorar.")
 
+    # 49. Obtener todas las notas de un estudiante ordenadas por asignatura
     def notes_student_ordered_by_asignature(state, student_id):
         if state:
             student = Student.active_objects.get(id=student_id)
             detail_notes = student.student_detail.select_related('note__asignature').order_by('note__asignature__description')
-            data_details = [f"Estudiante: {student.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n" for detail_note in detail_notes]
+            data_details = [
+                f"Estudiante: {student.full_name()}\nAsignatura: {detail_note.note.asignature.description}\nNota1: {detail_note.note1}, Nota2: {detail_note.note2}, Recuperación: {detail_note.recovery}, Observaciones: {detail_note.observations}\n"
+                for detail_note in detail_notes
+            ]
             joiners(data_details, "Notas del estudiante ordenadas por asignatura")
 
     notes_student_ordered_by_asignature(True, student_id=5)
